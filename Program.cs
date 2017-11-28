@@ -18,7 +18,7 @@ namespace SpeedProducerTest
             {
                 ["bootstrap.servers"] = "10.123.11.168:19092,10.123.11.146:19092,10.123.11.158:19092",
                 ["client.id"] = "akks-arch-demo",
-                ["message.timeout.ms"] = 3000,
+                ["message.timeout.ms"] = 60000,
                 ["default.topic.config"] = new Dictionary<string, object>()
                 {
                     ["acks"] = -1,
@@ -34,18 +34,18 @@ namespace SpeedProducerTest
                 Console.WriteLine($"Code for Error: {error.Code}");
             };
 
-            var count = 0;
+            var errored = 0;
+            var successful = 0;
 
             for (int index = 0; index < 1000000; index++)
             {
                 var key = "key" + index;
                 var msgToSend = new SimpleClass(key, index, 10);
                 ProduceMessages(key, msgToSend.Msgs.ToString());
-                if (index % 10000 == 0)
-                {
-                    var periodicFlush = producer.Flush(100);
-                    Console.WriteLine($"Flushing {periodicFlush} messages");
-                }
+                //if (index % 10000 == 0)
+                //{
+                //    producer.Flush(100);
+                //}
             }
 
             void ProduceMessages(string key, string msgToSend)
@@ -55,19 +55,26 @@ namespace SpeedProducerTest
                     {
                         if (task.Result.Error.HasError)
                         {
-                            Console.WriteLine($"Resending Message: key={task.Result.Key} offset={task.Result.Offset}");
-                            ProduceMessages(key, msgToSend);
-                            count++;
-                            Console.WriteLine(count);
+                            //Console.WriteLine($"Resending Message: key={task.Result.Key} offset={task.Result.Offset}");
+                            //ProduceMessages(key, msgToSend);
+                            errored++;
                         }
+                        if (task.Result.Error.HasError)
+                        {
+                            successful++;
+                        }
+
                     });
             }
-
+            var ret = producer.Flush(150000);
+            Console.WriteLine($"errored: {errored} successful: {successful}");
+            Console.WriteLine("Flushing ret=" + ret);
             Console.WriteLine("Sent test topic.");
             System.Threading.Thread.Sleep(5000000);
 
         }
 
+        //Builds a message of guids to simulate a simple message for kafka
         public class SimpleClass
         {
             public string Key { get; set; }
