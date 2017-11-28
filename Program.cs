@@ -66,11 +66,12 @@ namespace SpeedProducerTest
 
                     });
             }
-            var ret = producer.Flush(150000);
-            Console.WriteLine($"errored: {errored} successful: {successful}");
-            Console.WriteLine("Flushing ret=" + ret);
+            var returned = producer.Flush(150000);
+            Console.WriteLine("Flushing ret=" + returned);
             Console.WriteLine("Sent test topic.");
+            Console.WriteLine($"errored: {errored} successful: {successful}");
             System.Threading.Thread.Sleep(5000000);
+
 
         }
 
