@@ -50,7 +50,7 @@ namespace SpeedProducerTest
 
             void ProduceMessages(string key, string msgToSend)
             {
-                producer.ProduceAsync("testtopic", key, msgToSend)
+                producer.ProduceAsync("testopic", key, msgToSend)
                     .ContinueWith(task =>
                     {
                         if (task.Result.Error.HasError)
@@ -59,14 +59,14 @@ namespace SpeedProducerTest
                             //ProduceMessages(key, msgToSend);
                             errored++;
                         }
-                        if (task.Result.Error.HasError)
+                        if (!task.Result.Error.HasError)
                         {
                             successful++;
                         }
 
                     });
             }
-            var returned = producer.Flush(150000);
+            var returned = producer.Flush(70000);
             Console.WriteLine("Flushing ret=" + returned);
             Console.WriteLine("Sent test topic.");
             Console.WriteLine($"errored: {errored} successful: {successful}");
