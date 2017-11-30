@@ -25,55 +25,65 @@ namespace SpeedProducerTest
                 }
             };
 
-            var producer = new Producer<string, string>(kafkaConfig, new StringSerializer(Encoding.UTF8), new StringSerializer(Encoding.UTF8));
-
-            producer.OnError += (obj, error) =>
+            using (var producer = new Producer<string, string>(kafkaConfig, new StringSerializer(Encoding.UTF8), new StringSerializer(Encoding.UTF8)))
             {
-                Console.WriteLine($"On Error Report: HasError={error.HasError} IsBrokerError={error.IsBrokerError} IsLocalError={error.IsLocalError}");
-                Console.WriteLine($"Reason for Error: {error.Reason}");
-                Console.WriteLine($"Code for Error: {error.Code}");
-            };
+                producer.OnError += (obj, error) =>
+                {
+                    Console.WriteLine($"On Error Report: HasError={error.HasError} IsBrokerError={error.IsBrokerError} IsLocalError={error.IsLocalError}");
+                    Console.WriteLine($"Reason for Error: {error.Reason}");
+                    Console.WriteLine($"Code for Error: {error.Code}");
+                };
 
-            var errored = 0;
-            var successful = 0;
+                var errored = 0;
+                var successful = 0;
 
-            for (int index = 0; index < 1000000; index++)
-            {
-                var key = "key" + index;
-                var msgToSend = new SimpleClass(key, index, 10);
-                ProduceMessages(key, msgToSend.Msgs.ToString());
-                //if (index % 10000 == 0)
+                for (int index = 0; index < 1000000; index++)
+                {
+                    var key = "key" + index;
+                    var msgToSend = new SimpleClass(key, index, 10);
+                    ProduceMessages(key, msgToSend.Msgs.ToString());
+                    //if (index % 10000 == 0)
+                    //{
+                    //    producer.Flush(100);
+                    //}
+                }
+
+                void ProduceMessages(string key, string msgToSend)
+                {
+                    producer.ProduceAsync("testtopic", key, msgToSend)
+                        .ContinueWith(task =>
+                        {
+                            if (task.Result.Error.HasError)
+                            {
+                                //Console.WriteLine($"Resending Message: key={task.Result.Key} offset={task.Result.Offset}");
+                                //ProduceMessages(key, msgToSend);
+                                errored++;
+                            }
+                            if (!task.Result.Error.HasError)
+                            {
+                                successful++;
+                            }
+                        });
+                }
+                var returned = producer.Flush(70000);
+                
+                //while (returned > 0)
                 //{
-                //    producer.Flush(100);
+                //    returned = producer.Flush(70000);
+                //    Console.WriteLine("Flushing ret=" + returned);
                 //}
+
+                Console.WriteLine("Sent test topic.");
+                Console.WriteLine($"errored: {errored} successful: {successful}");
+
+                System.Threading.Thread.Sleep(5000000);
             }
-
-            void ProduceMessages(string key, string msgToSend)
-            {
-                producer.ProduceAsync("testopic", key, msgToSend)
-                    .ContinueWith(task =>
-                    {
-                        if (task.Result.Error.HasError)
-                        {
-                            //Console.WriteLine($"Resending Message: key={task.Result.Key} offset={task.Result.Offset}");
-                            //ProduceMessages(key, msgToSend);
-                            errored++;
-                        }
-                        if (!task.Result.Error.HasError)
-                        {
-                            successful++;
-                        }
-
-                    });
-            }
-            var returned = producer.Flush(70000);
-            Console.WriteLine("Flushing ret=" + returned);
-            Console.WriteLine("Sent test topic.");
-            Console.WriteLine($"errored: {errored} successful: {successful}");
-            System.Threading.Thread.Sleep(5000000);
-
-
         }
+
+            
+
+
+        
 
         //Builds a message of guids to simulate a simple message for kafka
         public class SimpleClass
