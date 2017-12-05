@@ -67,11 +67,11 @@ namespace SpeedProducerTest
                 }
                 var returned = producer.Flush(70000);
                 
-                //while (returned > 0)
-                //{
-                //    returned = producer.Flush(70000);
-                //    Console.WriteLine("Flushing ret=" + returned);
-                //}
+                while (returned > 0)
+                {
+                    returned = producer.Flush(70000);
+                    Console.WriteLine("Flushing ret=" + returned);
+                }
 
                 Console.WriteLine("Sent test topic.");
                 Console.WriteLine($"errored: {errored} successful: {successful}");
